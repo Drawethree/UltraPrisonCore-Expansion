@@ -3,6 +3,7 @@ package me.drawethree.ultraprisonexpansion;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.drawethree.ultraprisoncore.UltraPrisonCore;
 import me.drawethree.ultraprisoncore.ranks.rank.Rank;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -17,37 +18,19 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 	private UltraPrisonCore plugin;
 
 	/**
-	 * Since we register the expansion inside our own plugin, we
-	 * can simply use this method here to get an instance of our
-	 * plugin.
-	 *
-	 * @param plugin The instance of our plugin.
-	 */
-	public UltraPrisonExpansion(UltraPrisonCore plugin) {
-		this.plugin = plugin;
-	}
-
-	/**
-	 * Because this is an internal class,
-	 * you must override this method to let PlaceholderAPI know to not unregister your expansion class when
-	 * PlaceholderAPI is reloaded
-	 *
-	 * @return true to persist through reloads
-	 */
-	@Override
-	public boolean persist() {
-		return true;
-	}
-
-	/**
 	 * Because this is a internal class, this check is not needed
 	 * and we can simply return {@code true}
 	 *
 	 * @return Always true since it's an internal class.
 	 */
 	@Override
-	public boolean canRegister() {
-		return true;
+	public boolean canRegister(){
+		return (plugin = (UltraPrisonCore) Bukkit.getPluginManager().getPlugin(getRequiredPlugin())) != null;
+	}
+
+	@Override
+	public String getRequiredPlugin(){
+		return "UltraPrisonCore";
 	}
 
 	/**
