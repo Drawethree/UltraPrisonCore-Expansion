@@ -2,12 +2,16 @@ package me.drawethree.ultraprisonexpansion;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.drawethree.ultraprisoncore.UltraPrisonCore;
+import me.drawethree.ultraprisoncore.gangs.models.Gang;
+import me.drawethree.ultraprisoncore.pickaxelevels.model.PickaxeLevel;
 import me.drawethree.ultraprisoncore.ranks.rank.Rank;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * This class will be registered through the register-method in the
@@ -89,14 +93,14 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 		}
 
 
-		if (identifier.equalsIgnoreCase("tokens")) {
+		if (identifier.equalsIgnoreCase("tokens") || identifier.equalsIgnoreCase("tokens_2")) {
 			return String.format("%,d", plugin.getTokens().getTokensManager().getPlayerTokens(player));
-		} else if (identifier.equalsIgnoreCase("gems")) {
+		} else if (identifier.equalsIgnoreCase("gems") || identifier.equalsIgnoreCase("gems_2")) {
 			return String.format("%,d", plugin.getGems().getGemsManager().getPlayerGems(player));
-		} else if (identifier.equalsIgnoreCase("blocks")) {
+		} else if (identifier.equalsIgnoreCase("blocks") || identifier.equalsIgnoreCase("blocks_2")) {
 			return String.format("%,d", plugin.getTokens().getTokensManager().getPlayerBrokenBlocks(player));
 		} else if (identifier.equalsIgnoreCase("multiplier")) {
-			return String.format("%.2f", plugin.getMultipliers().getApi().getPlayerMultiplier(player));
+			return String.format("%.2f", (1.0 + plugin.getMultipliers().getApi().getPlayerMultiplier(player)));
 		} else if (identifier.equalsIgnoreCase("multiplier_global")) {
 			return String.format("%.2f", plugin.getMultipliers().getApi().getGlobalMultiplier());
 		} else if (identifier.equalsIgnoreCase("rank")) {
@@ -104,18 +108,55 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 		} else if (identifier.equalsIgnoreCase("next_rank")) {
 			Rank nextRank = plugin.getRanks().getApi().getNextPlayerRank(player);
 			return nextRank == null ? "" : nextRank.getPrefix();
+		} else if (identifier.equalsIgnoreCase("next_rank_cost")) {
+			return String.format("%,.2f", plugin.getRanks().getRankManager().getNextRankCost(player));
 		} else if (identifier.equalsIgnoreCase("prestige")) {
 			return plugin.getRanks().getApi().getPlayerPrestige(player).getPrefix();
 		} else if (identifier.equalsIgnoreCase("autominer_time")) {
 			return plugin.getAutoMiner().getTimeLeft(player);
-		} else if (identifier.equalsIgnoreCase("tokens_formatted")) {
+		} else if (identifier.equalsIgnoreCase("tokens_formatted") || identifier.equalsIgnoreCase("tokens_3")) {
 			return formatNumber(plugin.getTokens().getTokensManager().getPlayerTokens(player));
 		} else if (identifier.equalsIgnoreCase("gems_formatted")) {
 			return formatNumber(plugin.getGems().getGemsManager().getPlayerGems(player));
 		} else if (identifier.equalsIgnoreCase("rankup_progress")) {
 			return String.format("%d%%", plugin.getRanks().getRankManager().getRankupProgress(player));
-		}
+		} else if (identifier.equalsIgnoreCase("tokens_1")) {
+			return String.valueOf(plugin.getTokens().getTokensManager().getPlayerTokens(player));
+		} else if (identifier.equalsIgnoreCase("blocks_1")) {
+			return String.valueOf(plugin.getTokens().getTokensManager().getPlayerBrokenBlocks(player));
+		} else if (identifier.equalsIgnoreCase("blocks_3")) {
+			return formatNumber(plugin.getTokens().getTokensManager().getPlayerBrokenBlocks(player));
+		} else if (identifier.equalsIgnoreCase("gems_1")) {
+			return String.valueOf(plugin.getGems().getGemsManager().getPlayerGems(player));
+		} else if (identifier.equalsIgnoreCase("gems_3")) {
+			return formatNumber(plugin.getGems().getGemsManager().getPlayerGems(player));
+		} else if (identifier.equalsIgnoreCase("pickaxe_level")) {
 
+			PickaxeLevel level = plugin.getPickaxeLevels().getApi().getPickaxeLevel(player);
+
+			if (level != null) {
+				return String.valueOf(level.getLevel());
+			} else {
+				return "0";
+			}
+
+		} else if (identifier.equalsIgnoreCase("pickaxe_progress")) {
+			return this.plugin.getPickaxeLevels().getProgressBar(player);
+		} else if (identifier.equalsIgnoreCase("gang_name")) {
+			Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
+			if (optionalGang.isPresent()) {
+				return optionalGang.get().getName();
+			} else {
+				return ChatColor.RED + "✗";
+			}
+		} else if (identifier.equalsIgnoreCase("gang_value")) {
+			Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
+			if (optionalGang.isPresent()) {
+				return String.format("%,d", optionalGang.get().getValue());
+			} else {
+				return "";
+			}
+		}
 		return null;
 	}
 
