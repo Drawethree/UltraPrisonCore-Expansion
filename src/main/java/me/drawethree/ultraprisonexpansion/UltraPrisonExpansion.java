@@ -3,7 +3,10 @@ package me.drawethree.ultraprisonexpansion;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.drawethree.ultraprisoncore.UltraPrisonCore;
 import me.drawethree.ultraprisoncore.gangs.models.Gang;
+import me.drawethree.ultraprisoncore.multipliers.enums.MultiplierType;
+import me.drawethree.ultraprisoncore.multipliers.multiplier.GlobalMultiplier;
 import me.drawethree.ultraprisoncore.pickaxelevels.model.PickaxeLevel;
+import me.drawethree.ultraprisoncore.ranks.rank.Prestige;
 import me.drawethree.ultraprisoncore.ranks.rank.Rank;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -108,10 +111,16 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 			case "blocks":
 			case "blocks_2":
 				return String.format("%,d", plugin.getTokens().getTokensManager().getPlayerBrokenBlocks(player));
-			case "multiplier":
-				return String.format("%.2f", (1.0 + plugin.getMultipliers().getApi().getPlayerMultiplier(player)));
-			case "multiplier_global":
-				return String.format("%.2f", plugin.getMultipliers().getApi().getGlobalMultiplier());
+			case "multiplier_sell":
+				return String.format("%.2f", (1.0 + plugin.getMultipliers().getApi().getPlayerMultiplier(player, MultiplierType.SELL)));
+			case "multiplier_token":
+				return String.format("%.2f", (1.0 + plugin.getMultipliers().getApi().getPlayerMultiplier(player, MultiplierType.TOKENS)));
+			case "multiplier_global_sell":
+				GlobalMultiplier sellMulti = plugin.getMultipliers().getApi().getGlobalSellMultiplier();
+				return String.format("%.2f", sellMulti.isExpired() ? 0.0 : sellMulti.getMultiplier());
+			case "multiplier_global_token":
+				GlobalMultiplier tokenMulti = plugin.getMultipliers().getApi().getGlobalTokenMultiplier();
+				return String.format("%.2f", tokenMulti.isExpired() ? 0.0 : tokenMulti.getMultiplier());
 			case "rank":
 				return plugin.getRanks().getApi().getPlayerRank(player).getPrefix();
 			case "next_rank": {
@@ -191,7 +200,8 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 			case "gang_members_amount": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
 				if (optionalGang.isPresent()) {
-					return String.valueOf(optionalGang.get().getMembersOffline().size());
+					// +1 because of leader
+					return String.valueOf(optionalGang.get().getMembersOffline().size() + 1);
 				}
 				return "";
 			}
