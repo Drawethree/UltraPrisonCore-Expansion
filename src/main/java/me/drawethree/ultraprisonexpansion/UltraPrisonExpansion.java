@@ -2,14 +2,13 @@ package me.drawethree.ultraprisonexpansion;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.drawethree.ultraprisoncore.UltraPrisonCore;
-import me.drawethree.ultraprisoncore.gangs.models.Gang;
-import me.drawethree.ultraprisoncore.multipliers.enums.MultiplierType;
+import me.drawethree.ultraprisoncore.gangs.model.Gang;
+import me.drawethree.ultraprisoncore.mines.model.mine.Mine;
 import me.drawethree.ultraprisoncore.multipliers.multiplier.GlobalMultiplier;
+import me.drawethree.ultraprisoncore.multipliers.multiplier.PlayerMultiplier;
 import me.drawethree.ultraprisoncore.pickaxelevels.model.PickaxeLevel;
-import me.drawethree.ultraprisoncore.ranks.rank.Prestige;
 import me.drawethree.ultraprisoncore.ranks.rank.Rank;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -98,7 +97,27 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 	public String onPlaceholderRequest(Player player, String identifier) {
 
 		if (player == null) {
-			return "";
+			return null;
+		}
+
+		if (identifier.startsWith("mine_")) {
+
+			String mineName = identifier.replace("mine_","").split("_")[0];
+			Mine mine = plugin.getMines().getManager().getMineByName(mineName);
+
+			if (mine == null) {
+				return null;
+			}
+
+			String placeholder = identifier.replace("mine_" + mineName + "_","");
+			switch (placeholder.toLowerCase()) {
+				case "blocks_left": {
+					return String.format("%,d", mine.getCurrentBlocks());
+				}
+				case "blocks_left_percentage": {
+					return String.format("%,.2f", (double) mine.getCurrentBlocks() / mine.getTotalBlocks() * 100.0D);
+				}
+			}
 		}
 
 		switch (identifier.toLowerCase()) {
@@ -111,22 +130,38 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 			case "blocks":
 			case "blocks_2":
 				return String.format("%,d", plugin.getTokens().getTokensManager().getPlayerBrokenBlocks(player));
-			case "multiplier_sell":
-				return String.format("%.2f", (1.0 + plugin.getMultipliers().getApi().getPlayerMultiplier(player, MultiplierType.SELL)));
-			case "multiplier_token":
-				return String.format("%.2f", (1.0 + plugin.getMultipliers().getApi().getPlayerMultiplier(player, MultiplierType.TOKENS)));
-			case "multiplier_global_sell":
+			case "multiplier_sell": {
+				PlayerMultiplier sellMulti = plugin.getMultipliers().getApi().getSellMultiplier(player);
+				if (sellMulti == null || sellMulti.isExpired()) {
+					return String.format("%.2f", 0.0);
+				} else {
+					return String.format("%.2f", (1.0 + sellMulti.getMultiplier()));
+				}
+			}
+			case "multiplier_token": {
+				PlayerMultiplier tokenMulti = plugin.getMultipliers().getApi().getTokenMultiplier(player);
+				if (tokenMulti == null || tokenMulti.isExpired()) {
+					return String.format("%.2f", 0.0);
+				} else {
+					return String.format("%.2f", (1.0 + tokenMulti.getMultiplier()));
+				}
+			}
+			case "multiplier_global_sell": {
 				GlobalMultiplier sellMulti = plugin.getMultipliers().getApi().getGlobalSellMultiplier();
 				return String.format("%.2f", sellMulti.isExpired() ? 0.0 : sellMulti.getMultiplier());
-			case "multiplier_global_token":
+			}
+			case "multiplier_global_token": {
 				GlobalMultiplier tokenMulti = plugin.getMultipliers().getApi().getGlobalTokenMultiplier();
 				return String.format("%.2f", tokenMulti.isExpired() ? 0.0 : tokenMulti.getMultiplier());
+			}
 			case "rank":
 				return plugin.getRanks().getApi().getPlayerRank(player).getPrefix();
 			case "next_rank": {
 				Rank nextRank = plugin.getRanks().getApi().getNextPlayerRank(player);
 				return nextRank == null ? "" : nextRank.getPrefix();
 			}
+			case "next_rank_cost_raw":
+				return String.valueOf(plugin.getRanks().getRankManager().getNextRankCost(player));
 			case "next_rank_cost":
 				return String.format("%,.2f", plugin.getRanks().getRankManager().getNextRankCost(player));
 			case "next_rank_cost_formatted":
@@ -167,11 +202,7 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 			case "gang_name":
 			case "gang": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
-				if (optionalGang.isPresent()) {
-					return optionalGang.get().getName();
-				} else {
-					return ChatColor.RED + "✗";
-				}
+				return optionalGang.map(gang -> this.plugin.getGangs().getPlaceholder("gang-in-gang").replace("%gang%", gang.getName())).orElseGet(() -> this.plugin.getGangs().getPlaceholder("gang-without"));
 			}
 			case "gang_value": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
@@ -185,10 +216,7 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 				return this.plugin.getGangs().getGangsManager().getPlayerGang(player).isPresent() ? "Yes" : "No";
 			case "gang_is_leader": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
-				if (optionalGang.isPresent()) {
-					return optionalGang.get().isOwner(player) ? "Yes" : "No";
-				}
-				return "";
+				return optionalGang.map(gang -> gang.isOwner(player) ? "Yes" : "No").orElse("");
 			}
 			case "gang_leader_name": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
@@ -199,18 +227,12 @@ public class UltraPrisonExpansion extends PlaceholderExpansion {
 			}
 			case "gang_members_amount": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
-				if (optionalGang.isPresent()) {
-					// +1 because of leader
-					return String.valueOf(optionalGang.get().getMembersOffline().size() + 1);
-				}
-				return "";
+				// +1 because of leader
+				return optionalGang.map(gang -> String.valueOf(gang.getMembersOffline().size() + 1)).orElse("");
 			}
 			case "gang_members_online": {
 				Optional<Gang> optionalGang = this.plugin.getGangs().getGangsManager().getPlayerGang(player);
-				if (optionalGang.isPresent()) {
-					return String.valueOf(optionalGang.get().getOnlinePlayers().size());
-				}
-				return "";
+				return optionalGang.map(gang -> String.valueOf(gang.getOnlinePlayers().size())).orElse("");
 			}
 			default:
 				return null;
